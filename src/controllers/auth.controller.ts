@@ -1,7 +1,7 @@
 import {validationResult} from 'express-validator';
 import {Request, Response} from 'express';
 import {CognitoService} from '../services/cognito.service';
-
+import {AuthSession} from '../server';
 
 
 
@@ -21,13 +21,12 @@ export const signIn = async (req:Request, res:Response) : Promise<Response> => {
     await cognito.signIn(req.body.email, req.body.password)
     .then((response) => {
             const {AccessToken} = response.AuthenticationResult;
-            const {ExpiresIn} = response.AuthenticationResult;
-            // set access token in cookie
-            res.cookie('AccessToken', AccessToken, { secure:false, httpOnly: true, maxAge: (1000 * ExpiresIn)})
-            res.cookie('AuthType', 'cognito', { secure:false, httpOnly: true, maxAge: (1000 * ExpiresIn)})
             
-            return res.send({status: "ok", message: "User logged in successfully"})
-             
+            //set token in session
+            (req.session as AuthSession).AccessToken = AccessToken;
+            (req.session as AuthSession).AuthType = 'cognito';
+            
+            return res.send({status: "ok", message: "User logged in successfully"})    
         }
     ).catch((error) => {
         switch (error.code) {

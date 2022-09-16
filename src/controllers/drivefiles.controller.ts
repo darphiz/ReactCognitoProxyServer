@@ -3,6 +3,7 @@ import {Request, Response} from 'express'
 import credentials from '../credentials.json'
 
 import {google} from 'googleapis'
+import { AuthSession } from '../server';
 
 
 
@@ -36,14 +37,13 @@ export const googleCallback = async (req: Request, res: Response) :Promise<Respo
     }
     
     try{
-        const {tokens} = await oauth2Client.getToken(code as string)     
+        const {tokens} = await oauth2Client.getToken(code as string);     
+
+        (req.session as any).AccessToken = tokens.access_token; 
+        (req.session as any).AuthType = "google";
 
 
-        //TODO : communicate the token to the frontend in real time (websocket) 
-
-
-        return res.send({status: "ok", message: "Google Successfull", tokens: tokens});
-
+        res.status(301).redirect('http://localhost:3000/api/google/drive')
     }
     catch{
         return res.status(400).send({status: "ko", message: "Error retrieving access token"})
@@ -55,7 +55,7 @@ export const googleCallback = async (req: Request, res: Response) :Promise<Respo
 
 export const getDriveFiles = async (req: Request, res: Response) :Promise<Response> => {
     
-    const {AccessToken, AuthType} = req.body;
+    const {AccessToken, AuthType} = req.session as AuthSession
     
     if (!AuthType || AuthType ==='cognito'){
         return res.send({

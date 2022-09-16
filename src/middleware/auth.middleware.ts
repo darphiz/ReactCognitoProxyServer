@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwkToPem from 'jwk-to-pem';
 import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch';
+import { AuthSession } from "../server";
 
 interface IRes {
     json: () => Promise<any>;
@@ -14,18 +15,9 @@ interface Ipems {
 }
 
 
-export const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
+const verifyCognitoToken = async (token:string) => {
     let pems:Ipems = {};
-        // get token from cookie
-    const token:string = req.cookies['AccessToken']
-    const authType = req.body.AuthType || req.cookies["AuthType"] 
-
-
-    if (authType && authType === 'google'){
-        return next()
-    }
-
-
+    
     const setUp = async () => {
         const region = process.env.COGNITO_REGION;
         const userPoolId = process.env.COGNITO_USER_POOL_ID;
@@ -48,8 +40,8 @@ export const verifyToken = async (req: Request, res: Response, next: NextFunctio
                 pems[keyId] = pem;
             }
 
-        } catch (error) {
-            console.log("Could not get keys");
+        } catch (error:any) {
+            throw new Error(error);
         }
 
     }
@@ -58,29 +50,46 @@ export const verifyToken = async (req: Request, res: Response, next: NextFunctio
 
 
     if (!token) {
-        return res.status(401).send({
-            status:"ko",
-            message: "Access denied. No token provided"
-        });
+        throw new Error("No token provided");
     }
     const decodeJwt = jwt.decode(token, { complete: true });
     if (!decodeJwt) {
-        return res.status(401).send({
-            status:"ko",
-            message: "Access denied. Invalid auth token"
-        });
+        throw new Error("Not a valid JWT token");
     }
 
     const kid = decodeJwt.header.kid;
     let pem = pems[kid]
     if (!pem){
-        return res.status(401).send({status: "ko", message: "Access denied. Invalid token."});
+        throw new Error("Invalid token");
     }
 
     jwt.verify(token, pem, (err, decoded) => {
         if (err) {
-            return res.status(401).send({status: "ko", message: "Access denied. Invalid token."});
+            throw new Error("Invalid token");
         }
-        return next();
+        return decoded;
     })
+    
 }
+
+
+export const validateSession  = (req:Request, res:Response, next:NextFunction) =>{
+    const {AuthType, AccessToken} = req.session as AuthSession;
+    if (!AuthType || !AccessToken) {
+        return res.status(401).send({status:"ko", message: 'Unauthorized'})
+    }
+
+    if (AuthType === 'cognito') {
+        try {
+            verifyCognitoToken(AccessToken);
+            next();
+        } catch (error:any) {
+            return res.status(401).send({status:"ko", message: error.message})
+        }
+    }
+
+    next();
+    
+}
+
+
