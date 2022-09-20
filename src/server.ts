@@ -29,7 +29,7 @@ const port = process.env.PORT || 5000
 const secret:string = process.env.SECRET 
 
 const corsOptions = {
-    origin: [process.env.CLIENT_ORIGIN, 'http://localhost:3000'],
+    origin: process.env.CLIENT_ORIGIN,
     credentials: true
 }
 
@@ -38,6 +38,7 @@ app.use(helmet())
 app.use(cors(corsOptions))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+app.set("trust proxy", 1);
 app.use(
     session({
         name: 'sid',
@@ -47,12 +48,11 @@ app.use(
         cookie: { 
             secure: process.env.APP_MODE === 'development' ? false : true,
             httpOnly: process.env.APP_MODE === 'development' ? false : true,
-            sameSite: process.env.APP_MODE === 'development' ? false : 'none',
+            sameSite: process.env.APP_MODE === 'development' ? 'lax' : 'none',
          },
         store: new filestore({path: './sessions', retries: 0})
     })
 )
-
 app.use(cookieParser())
 app.use('/api', authApi)
 app.use('/api', driveApi)
