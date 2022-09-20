@@ -38,7 +38,7 @@
     "clean": "rimraf dist/ || echo Compiling",
     "build": "tsc",
     "dev": "ts-node-dev --respawn --transpile-only ./src/server.ts",
-    "start": "tsc && node dist/server.js"
+    "start": "node dist/server.js"
   },
   "engines": {
     "node": "14.x"
