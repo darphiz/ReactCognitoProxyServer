@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.get('/google/login', googleLogin)
 router.get('/google/callback', googleCallback)
-router.post('/google/drive',validateSession, getDriveFiles)
+router.all('/google/drive',validateSession, getDriveFiles)
 
 
 export default router;

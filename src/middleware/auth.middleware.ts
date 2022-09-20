@@ -73,7 +73,7 @@ const verifyCognitoToken = async (token:string) => {
 }
 
 
-export const validateSession  = (req:Request, res:Response, next:NextFunction) =>{
+export const validateSession  = async(req:Request, res:Response, next:NextFunction) =>{
     const {AuthType, AccessToken} = req.session as AuthSession;
     if (!AuthType || !AccessToken) {
         return res.status(401).send({status:"ko", message: 'Unauthorized'})
@@ -81,14 +81,14 @@ export const validateSession  = (req:Request, res:Response, next:NextFunction) =
 
     if (AuthType === 'cognito') {
         try {
-            verifyCognitoToken(AccessToken);
-            next();
+            await verifyCognitoToken(AccessToken);
+            return next();
         } catch (error:any) {
             return res.status(401).send({status:"ko", message: error.message})
         }
     }
 
-    next();
+    return next();
     
 }
 

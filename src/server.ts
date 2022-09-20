@@ -28,8 +28,14 @@ const app = express()
 const port = process.env.PORT || 5000
 const secret:string = process.env.SECRET 
 
+const corsOptions = {
+    origin: [process.env.CLIENT_ORIGIN, 'http://localhost:3000'],
+    credentials: true
+}
+
+
 app.use(helmet())
-app.use(cors())
+app.use(cors(corsOptions))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(
@@ -38,7 +44,11 @@ app.use(
         secret: secret,
         resave: false,
         saveUninitialized: false,
-        cookie: { secure: false },
+        cookie: { 
+            secure: process.env.APP_MODE === 'development' ? false : true,
+            httpOnly: process.env.APP_MODE === 'development' ? false : true,
+            sameSite: process.env.APP_MODE === 'development' ? false : 'none',
+         },
         store: new filestore({path: './sessions', retries: 0})
     })
 )
@@ -46,6 +56,26 @@ app.use(
 app.use(cookieParser())
 app.use('/api', authApi)
 app.use('/api', driveApi)
+
+app.get('/api/auth/check', (req:Request, res:Response) => {
+    const {AccessToken, AuthType} = req.session as AuthSession
+    if(AccessToken && AuthType){
+        return res.send({status: "ok", message: "User logged in successfully"})
+    }else{
+        return res.status(401).send({status:"ko", message: 'User not logged in'})
+    }
+})
+
+app.post('/api/auth/logout', (req:Request, res:Response) => {
+    req.session.destroy((err) => {
+        if(err) {
+            return res.status(500).json({status: "ok", message: 'Something went wrong'})
+        }
+        res.clearCookie('sid')
+        res.status(200).send({status: "ok", message: 'Logged out'})
+    })
+})
+
 
 app.all('*', (req: Request, res: Response) => {
     const msg = {status: "ko", message: "Not Found"}

@@ -20,30 +20,49 @@ const oauth2Client = new google.auth.OAuth2(
 
 export const googleLogin = (req:Request, res: Response): Response =>{    
     const SCOPE:Array<string> = ['https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/drive.file']
-    
+    const frontend_url:string = req.header('Origin') || '/api/google/drive'
+
+    const _state:string = JSON.stringify({
+        frontend_url: frontend_url
+    }) 
+
+
     const authUrl = oauth2Client.generateAuthUrl({
         access_type: 'offline',
         scope: SCOPE,
+        state: _state
     })
 
-    return res.send({status: "ok", message: "Success", url: authUrl});
+    return res.send({status: "ok", message: "Success", oauth_url: authUrl});
 }
 
 
 export const googleCallback = async (req: Request, res: Response) :Promise<Response> => {
     const {code} =  req.query
-    if (!code) {
-        return res.status(400).send({status: "ko", message: "No code provided"})
-    }
-    
     try{
+        
+        const {state} = req.query
+        const _state = JSON.parse(state as string)
+        const frontend_url = _state.frontend_url
+    
+        if(!frontend_url){
+            return res.send({status: "error", message: "Invalid redirect url"})
+        }
+    
+        if (!code) {
+            return res.status(400).send({status: "ko", message: "No code provided"})
+        }
+
+        
         const {tokens} = await oauth2Client.getToken(code as string);     
 
         (req.session as any).AccessToken = tokens.access_token; 
         (req.session as any).AuthType = "google";
 
 
-        res.status(301).redirect('http://localhost:3000/api/google/drive')
+        res.redirect(302, frontend_url)
+        return res.end()
+   
     }
     catch{
         return res.status(400).send({status: "ko", message: "Error retrieving access token"})
@@ -61,7 +80,7 @@ export const getDriveFiles = async (req: Request, res: Response) :Promise<Respon
         return res.send({
             status: "ok",
             message: "Success",
-            files: null
+            files: []
         })
     }
 

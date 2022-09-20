@@ -33,7 +33,7 @@ export const signIn = async (req:Request, res:Response) : Promise<Response> => {
             case 'UserNotFoundException':
                 return res.status(404).send({status:"ko", message: 'User not found'})
             case 'NotAuthorizedException':
-                return res.status(401).send({status:"ko", message: 'Incorrect password'})
+                return res.status(401).send({status:"ko", message: 'Incorrect credentials'})
             default:
                 return res.status(500).send({status:"ko", message: 'Internal Server Error'})
 
@@ -61,7 +61,7 @@ export const signUp = async (req:Request, res:Response): Promise<Response> => {
             {Name: 'name', Value: full_name}
         ]);
         if (response){
-            return res.send({status: "ok", message: "Sign Up"});
+            return res.status(200).send({status: "ok", message: "Sign Up"});
         }
         return res.status(500).send({status: "ko", message: "Sign Up Error"});
     }
@@ -97,7 +97,7 @@ export const confirmSignUp = async (req:Request, res:Response) => {
     try{
         const response = await cognito.confirmSignUp(email, code);
         if (response){
-            return res.send({status: "ok", message: "Sign Up Confirmed"});
+            return res.send({status: "ok", message: "Sign Up successfull"});
         }
         return res.status(500).send({status: "ko", message: "Confirmation Error"});
     }

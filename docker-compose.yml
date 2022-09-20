@@ -1,0 +1,15 @@
+version: "3"
+services:
+  api-endpoint:
+    build:
+      context: .
+    image: api-server
+    container_name: api-server
+    ports:
+      - "80:80"
+    volumes:
+      - session_data:/app/sessions
+
+
+volumes:
+  session_data:
