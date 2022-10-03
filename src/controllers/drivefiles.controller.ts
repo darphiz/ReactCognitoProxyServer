@@ -14,7 +14,7 @@ const redirect_uris:Array<string> = credentials.web.redirect_uris;
 const oauth2Client = new google.auth.OAuth2(
     client_id,
     client_secret,
-    redirect_uris[0]
+    "https://files-api-server.herokuapp.com/api/google/callback"
 )
 
 
@@ -55,7 +55,6 @@ export const googleCallback = async (req: Request, res: Response) :Promise<Respo
 
         
         const {tokens} = await oauth2Client.getToken(code as string);     
-
         (req.session as any).AccessToken = tokens.access_token; 
         (req.session as any).AuthType = "google";
 

@@ -11,19 +11,24 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const express_session_1 = __importDefault(require("express-session"));
 const helmet_1 = __importDefault(require("helmet"));
-const cors_1 = __importDefault(require("cors"));
 const session_file_store_1 = __importDefault(require("session-file-store"));
 const filestore = (0, session_file_store_1.default)(express_session_1.default);
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const port = process.env.PORT || 5000;
 const secret = process.env.SECRET;
-const corsOptions = {
-    origin: process.env.CLIENT_ORIGIN,
-    credentials: true
-};
 app.use((0, helmet_1.default)());
-app.use((0, cors_1.default)(corsOptions));
+app.use((req, res, next) => {
+    res.set('credentials', 'include');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Origin', req.headers.origin);
+    res.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept');
+    next();
+});
+app.options('*', (req, res) => {
+    res.sendStatus(200);
+});
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 app.set("trust proxy", 1);
@@ -32,6 +37,7 @@ app.use((0, express_session_1.default)({
     secret: secret,
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
         secure: process.env.APP_MODE === 'development' ? false : true,
         httpOnly: process.env.APP_MODE === 'development' ? false : true,

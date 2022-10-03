@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: filesapp-deployment
+  namespace: filesapp-ns
+  labels:
+    app: filesapp-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: filesapp-api
+  template:
+    metadata:
+      labels:
+        app: filesapp-api
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+                - arm64
+      containers:
+      - name: filesapp-backend
+        image: <Image url>
+        ports:
+        - name: http
+          containerPort: 80
+        imagePullPolicy: IfNotPresent
+      
+      # imagePullSecrets:   uncheck if its a private repo
+      #   - name: regcreds
+      nodeSelector:
+        kubernetes.io/os: linux

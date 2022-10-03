@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { NextFunction } from 'express'
 import { Request,Response } from 'express'
 import authApi from './router/auth.router'
 import driveApi from './router/drive.router'
@@ -6,7 +6,6 @@ import dotenv from 'dotenv'
 import cookieParser from 'cookie-parser'
 import session from 'express-session'
 import helmet from "helmet"
-import cors from 'cors'
 import fs from 'session-file-store'
 import { Session } from "express-session";
 
@@ -28,14 +27,25 @@ const app = express()
 const port = process.env.PORT || 5000
 const secret:string = process.env.SECRET 
 
-const corsOptions = {
-    origin: process.env.CLIENT_ORIGIN,
-    credentials: true
-}
-
 
 app.use(helmet())
-app.use(cors(corsOptions))
+
+
+app.use((req:Request, res:Response, next:NextFunction) =>{
+   
+    res.set('credentials', 'include');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Origin', req.headers.origin);
+    res.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept');
+    next();
+} );
+
+app.options('*',  (req:Request, res:Response) => {
+    res.sendStatus(200);
+    }
+);
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.set("trust proxy", 1);
@@ -45,6 +55,7 @@ app.use(
         secret: secret,
         resave: false,
         saveUninitialized: false,
+        proxy: true,
         cookie: { 
             secure: process.env.APP_MODE === 'development' ? false : true,
             httpOnly: process.env.APP_MODE === 'development' ? false : true,

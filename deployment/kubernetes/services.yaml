@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: filesapp-service
+  namespace: filesapp-ns
+  labels:
+    app: filesapp-api
+spec:
+  selector:
+    app: filesapp-api
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
